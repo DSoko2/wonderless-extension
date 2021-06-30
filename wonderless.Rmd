@@ -1,0 +1,134 @@
+---
+title: "Additional Wonderless Stats"
+output:
+  html_notebook:
+    code_folding: hide
+    toc: yes
+---
+
+<style type="text/css">
+.main-container {
+  max-width: inherit;
+}
+.datatable {
+  overflow-x: auto;
+}
+</style>
+
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+
+# Dependencies
+
+```{r}
+if (!require(tidyverse))
+  install.packages("tidyverse")
+library(tidyverse)
+if (!require(viridis))
+  install.packages("viridis")
+library(viridis)
+if (!require(gh))
+  install.packages("gh")
+library(gh)
+if (!require(jsonlite))
+  install.packages("jsonlite")
+library(jsonlite)
+if (!require(DT))
+  install.packages('DT')
+library(DT)
+```
+
+# Configure GH API
+
+Set `ghToken` GitHub personal access token with public access in order to authenticate with their API.
+
+```{r}
+ghToken <- 'ghp_XXX'
+
+ghAuth <- function(...) {
+  gh(..., .token=ghToken)
+}
+ghAllPages <- function(...) {
+  result <- list()
+  i <- 0
+  repeat {
+    i <- i + 1
+    newElements <- NA
+    tryCatch({
+      newElements <- ghAuth(..., per_page=100, page=i)
+    }, error=function(e) {
+      if (is(e, 'http_error_404') & i == 1) return(NA)
+      else return(e)
+    })
+    if (anyNA(newElements)) return(NA)
+    result <- append(result, newElements)
+    if (length(newElements) < 100) return(result)
+  }
+}
+```
+
+# Load Repos
+
+```{r}
+repo_urls <- read.csv2('./dataset.csv') %>% transmute(repoUrl = Project.URLs)
+repo_urls
+```
+
+# Releases and Tags
+
+To fetch tags and releases uncomment download and JSON export code.
+
+```{r}
+#repoTagsReleases <- repo_urls %>%
+#  mutate(owner=map_chr(repoUrl, ~ str_split(.x, '/')[[1]][4]),
+#         repo=map_chr(repoUrl, ~ str_split(.x, '/')[[1]][5]),
+#         tags=pmap(list('GET /repos/{owner}/{repo}/tags', owner=owner, repo=repo), ghAllPages),
+#         tagsCount=map_int(tags, ~ if (anyNA(.x)) NA else length(.x)),
+#         releases=pmap(list('GET /repos/{owner}/{repo}/releases', owner=owner, repo=repo), ghAllPages),
+#         releasesCount=map_int(releases, ~ if (anyNA(.x)) NA else length(.x)))
+#
+#exportJSON <- toJSON(repoTagsReleases)
+#write(exportJSON, 'repositories-tags-releases.json')
+
+repoTagsReleases <- fromJSON('repositories-tags-releases.json')
+repoTagsReleases %>% datatable()
+```
+
+# GitHub Actions Workflows
+
+```{r}
+ghActionWorkflows <- read.csv2('./gh-actions-workflows.txt', header=FALSE, col.names=c('ghActionWorkflow')) %>%
+  mutate(project=map_chr(ghActionWorkflow, ~ str_split(.x, '/')[[1]][3]))
+ghActionWorkflowRepos <- ghActionWorkflows %>% group_by(project) %>% summarise(ghActionWorkflows=list(ghActionWorkflow), ghActionsWorkflowsCount=n()) %>% ungroup()
+ghActionWorkflowRepos %>% datatable()
+```
+
+# Amazon States Language
+
+```{r}
+aslWorkflows <- read.csv2('./asl.txt', header=FALSE, col.names=c('aslWorkflow')) %>%
+  mutate(project=map_chr(aslWorkflow, ~ str_split(.x, '/')[[1]][3]))
+aslWorkflowRepos <- aslWorkflows %>% group_by(project) %>% summarise(aslWorkflows=list(aslWorkflow), aslWorkflowsCount=n()) %>% ungroup()
+aslWorkflowRepos %>% datatable()
+```
+
+# Airflow
+
+```{r}
+airflowWorkflows <- read.csv2('./airflow.txt', header=FALSE, col.names=c('airflowWorkflow')) %>%
+  mutate(project=map_chr(airflowWorkflow, ~ str_split(.x, '/')[[1]][3]))
+airflowWorkflowRepos <- airflowWorkflows %>% group_by(project) %>% summarise(airflowWorkflows=list(airflowWorkflow), airflowWorkflowsCount=n()) %>% ungroup()
+airflowWorkflowRepos %>% datatable()
+```
+
+# Summary
+
+```{r}
+reposSummary <- repoTagsReleases %>% mutate(project=paste(owner, repo, sep='_')) %>%
+  full_join(ghActionWorkflowRepos, by='project') %>%
+  full_join(aslWorkflowRepos, by='project') %>%
+  full_join(airflowWorkflowRepos, by='project')
+reposSummary %>% datatable()
+```
