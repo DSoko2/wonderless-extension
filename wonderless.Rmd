@@ -105,6 +105,15 @@ ghActionWorkflowRepos <- ghActionWorkflows %>% group_by(project) %>% summarise(g
 ghActionWorkflowRepos %>% datatable()
 ```
 
+# Gitlab CI
+
+```{r}
+gitlabCI <- read.csv2('./gitlab-ci.txt', header=FALSE, col.names=c('gitlabCI')) %>%
+  mutate(project=map_chr(gitlabCI, ~ str_split(.x, '/')[[1]][3]))
+gitlabCIRepos <- gitlabCI %>% group_by(project) %>% summarise(gitlabCI=list(gitlabCI), gitlabCICount=n()) %>% ungroup()
+gitlabCIRepos %>% datatable()
+```
+
 # Amazon States Language
 
 ```{r}
@@ -123,12 +132,23 @@ airflowWorkflowRepos <- airflowWorkflows %>% group_by(project) %>% summarise(air
 airflowWorkflowRepos %>% datatable()
 ```
 
+# BPPMN
+
+```{r}
+bpmnWorkflows <- read.csv2('./bpmn.txt', header=FALSE, col.names=c('bpmnWorkflow')) %>%
+  mutate(project=map_chr(bpmnWorkflow, ~ str_split(.x, '/')[[1]][3]))
+bpmnWorkflowRepos <- bpmnWorkflows %>% group_by(project) %>% summarise(bpmnWorkflows=list(bpmnWorkflow), bpmnWorkflowsCount=n()) %>% ungroup()
+bpmnWorkflowRepos %>% datatable()
+```
+
 # Summary
 
 ```{r}
 reposSummary <- repoTagsReleases %>% mutate(project=paste(owner, repo, sep='_')) %>%
   full_join(ghActionWorkflowRepos, by='project') %>%
+  full_join(gitlabCIRepos, by='project') %>%
   full_join(aslWorkflowRepos, by='project') %>%
-  full_join(airflowWorkflowRepos, by='project')
+  full_join(airflowWorkflowRepos, by='project') %>%
+  full_join(bpmnWorkflowRepos, by='project')
 reposSummary %>% datatable()
 ```

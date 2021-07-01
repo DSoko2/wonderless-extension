@@ -9,7 +9,9 @@ Information added:
 * Tags (Snapshot 30.06.2021)
 * Releases (Snapshot 30.06.2021)
 * GitHub Actions Workflows (Snapshot in http://doi.org/10.5281/zenodo.4451387 )
+* Gitlab CI Configuration (Snapshot in http://doi.org/10.5281/zenodo.4451387 )
 * Apache Airflow Workflows (Includes Google Cloud Composer) (Snapshot in http://doi.org/10.5281/zenodo.4451387 )
 * AWS StepFunction Workflows in Amazon State Language (Snapshot in http://doi.org/10.5281/zenodo.4451387 )
+* BPMN Workflows (Snapshot in http://doi.org/10.5281/zenodo.4451387 )
 
 `dataset.csv` is copied from http://doi.org/10.5281/zenodo.4451387.
